@@ -3,7 +3,8 @@ from users.models import User, Payment
 from users.serializers import UserSerializer, PaymentSerializer
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
-
+from rest_framework.permissions import AllowAny
+from users.serializers import UserRegisterSerializer
 
 
 class UserProfileUpdateAPIView(generics.RetrieveUpdateAPIView):
@@ -17,3 +18,9 @@ class PaymentListAPIView(generics.ListAPIView):
     filter_backends = [DjangoFilterBackend, OrderingFilter] # Бэкенды для фильтрации и сортировки
     filterset_fields = ("paid_course", "paid_lesson", "payment_method") # поля для точной фильтрации
     ordering_fields = ("payment_date",) # поля для сортировки (по дате оплаты)
+
+
+class UserRegisterAPIView(generics.CreateAPIView):
+    serializer_class = UserRegisterSerializer
+    # Открываем этот эндпоинт для неавторизованных пользователей
+    permission_classes = [AllowAny]

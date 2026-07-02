@@ -13,3 +13,21 @@ class PaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment
         fields = '__all__'
+
+
+class UserRegisterSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = User
+        fields = ['email', 'password', 'phone', 'city', 'avatar']
+
+    def create(self, validated_data):
+        # Извлекаем пароль из проверенных данных
+        password = validated_data.pop('password')
+        # Создаем пользователя
+        user = User.objects.create(**validated_data)
+        # Хешируем пароль и сохраняем
+        user.set_password(password)
+        user.save()
+        return user
