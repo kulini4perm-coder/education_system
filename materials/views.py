@@ -1,13 +1,19 @@
 from rest_framework import viewsets, generics
-from materials.models import Course, Lesson
+from materials.models import Course, Lesson, Subscription
+from materials.paginators import CoursePaginator, LessonPaginator
 from materials.serializers import CourseSerializer, LessonSerializer
 from rest_framework.permissions import IsAuthenticated
 from users.permissions import IsModerator, IsOwner
+from django.shortcuts import get_object_or_404
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
 
 
 # ViewSet для Курсов
 class CourseViewSet(viewsets.ModelViewSet):
     serializer_class = CourseSerializer
+    pagination_class = CoursePaginator
 
     # Разделяем курсы по роли пользователя
     def get_queryset(self):
@@ -47,6 +53,7 @@ class LessonCreateAPIView(generics.CreateAPIView):
 class LessonListAPIView(generics.ListAPIView):
     serializer_class = LessonSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = LessonPaginator
 
     def get_queryset(self):
         if self.request.user.groups.filter(name="moderators").exists():
@@ -67,3 +74,29 @@ class LessonDestroyAPIView(generics.DestroyAPIView):
     queryset = Lesson.objects.all()
     permission_classes = [IsAuthenticated, IsOwner]
 
+
+# Контроллер управления подпиской на обновления курса
+class SubscriptionAPIView(APIView):
+
+    def post(self, request, *args, **kwargs):
+        user = request.user  # Текущий авторизованный пользователь
+        course_id = request.data.get("course_id")  # ID курса из тела запроса
+
+        # Проверка, передан ли ID
+        if not course_id:
+            return Response({"error": "Поле course_id обязательно."}, status=400)
+
+        # Получаем объект курса или отдаем 404
+        course_item = get_object_or_404(Course, pk=course_id)
+
+        # Ищем подписку в базе данных
+        subs_item = Subscription.objects.filter(user=user, course=course_item)
+
+        if subs_item.exists(): # если подписка уже есть -
+            subs_item.delete() # удаляем ее из базы
+            message = "Подписка удалена."
+        else:
+            Subscription.objects.create(user=user, course=course_item) # если подписки нет - создаем
+            message = "Подписка добавлена."
+
+        return Response({"message": message})
