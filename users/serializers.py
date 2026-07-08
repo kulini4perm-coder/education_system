@@ -9,6 +9,7 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ['email']
 
 class PaymentSerializer(serializers.ModelSerializer):
+    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
 
     class Meta:
         model = Payment
