@@ -43,10 +43,12 @@ class User(AbstractUser):
 class Payment(models.Model):
     CASH = 'cash'
     TRANSFER = 'transfer'
+    CARD = 'card'
 
     PAYMENT_METHOD_CHOICES = [
         (CASH, 'Наличные'),
         (TRANSFER, 'Перевод на счет'),
+        (CARD, 'Банковская карта'),
     ]
 
     user = models.ForeignKey(
@@ -86,8 +88,25 @@ class Payment(models.Model):
     payment_method = models.CharField(
         max_length=20,
         choices=PAYMENT_METHOD_CHOICES,
-        default=TRANSFER,
+        default=CARD,
         verbose_name='Способ оплаты'
+    )
+    payment_url = models.URLField(
+        max_length=1000,
+        blank=True, null=True,
+        verbose_name="Ссылка на оплату"
+    )
+    session_id = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        verbose_name="ID сессии Stripe"
+    )
+    payment_status = models.CharField(
+        max_length=50,
+        default="pending",
+        verbose_name="Статус платежа",
+        help_text="pending, paid, canceled"
     )
 
     class Meta:
