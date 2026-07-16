@@ -9,6 +9,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from drf_spectacular.utils import extend_schema, extend_schema_view, inline_serializer
 from rest_framework import serializers
+from django.utils import timezone
+from datetime import timedelta
+from materials.tasks import send_course_update_email
 
 
 # ViewSet для Курсов
@@ -69,6 +72,18 @@ class CourseViewSet(viewsets.ModelViewSet):
 
         return [permission() for permission in self.permission_classes]
 
+    def perform_update(self, serializer):
+        # Сохраняем измененный курс
+        course = serializer.save()
+
+        # Сравниваем текущее время с предыдущим временем обновления курса
+        if course.updated_at and (timezone.now() - course.updated_at) > timedelta(hours=4): # seconds=10 для теста
+            # Запускаем задачу асинхронно через .delay()
+            send_course_update_email.delay(course.id)
+        elif not course.updated_at:
+            # Если поле пустое, тоже отправляем
+            send_course_update_email.delay(course.id)
+
 
 # Generics для Уроков
 
@@ -114,6 +129,21 @@ class LessonUpdateAPIView(generics.UpdateAPIView):
     queryset = Lesson.objects.all()
     serializer_class = LessonSerializer
     permission_classes = [IsAuthenticated, IsModerator | IsOwner]
+
+    def perform_update(self, serializer):
+        # Сохраняем обновленный урок
+        lesson = serializer.save()
+
+        # Получаем связанный курс
+        course = lesson.course
+
+        # Если урок привязан к курсу — проверяем время и обновляем дату курса
+        if course:
+            if (timezone.now() - course.updated_at) > timedelta(hours=4): # seconds=10 для теста
+                # Активируем Celery-задачу
+                send_course_update_email.delay(course.id)
+
+            course.touch()
 
 @extend_schema(
     summary="Удалить урок",

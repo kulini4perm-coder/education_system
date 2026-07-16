@@ -141,3 +141,34 @@ SPECTACULAR_SETTINGS = {
     'COMPONENT_SPLIT_REQUEST': True,
 }
 
+# Считываем настройки Redis из .env
+REDIS_HOST = os.getenv("REDIS_HOST")
+REDIS_PORT = os.getenv("REDIS_PORT")
+REDIS_DB = os.getenv("REDIS_DB")
+
+# URL для брокера и бэкенда
+CELERY_BROKER_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
+CELERY_RESULT_BACKEND = f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
+
+# Общие настройки таймзон и трекинга Celery
+CELERY_TIMEZONE = TIME_ZONE # синхронизация с временем системы
+CELERY_TASK_TRACK_STARTED = True
+
+
+# Настройка Celery Beat (периодических задач) через код settings.py
+# Используем CELERY_BEAT_SCHEDULE вместо библиотеки django-celery-beat
+# из-за конфликта версий на ОС Windows с Python 3.14.
+
+from celery.schedules import crontab
+
+CELERY_BEAT_SCHEDULE = {
+    'block_inactive_users_daily': {
+        'task': 'users.tasks.check_inactive_users',  # Полный путь к задаче
+        'schedule': crontab(hour=0, minute=0),  # Запуск каждый день ровно в 00:00
+    },
+}
+
+# На время разработки выводим письма в консоль
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'no-reply@education_system.ru'
+
