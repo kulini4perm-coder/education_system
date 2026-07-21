@@ -1,0 +1,72 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${NAME}
+      POSTGRES_USER: ${USER}
+      POSTGRES_PASSWORD: ${PASSWORD}
+    expose:
+      - "5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    env_file:
+      - ./.env
+
+  redis:
+    image: redis:7-alpine
+    expose:
+      - "6379"
+    volumes:
+      - redis_data:/data
+    env_file:
+      - ./.env
+
+  web:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - "HOST=db"
+      - "REDIS_HOST=redis"
+    depends_on:
+      - db
+      - redis
+    env_file:
+      - ./.env
+
+  celery:
+    build: .
+    command: celery -A config worker -l INFO -P eventlet
+    volumes:
+      - .:/app
+    environment:
+      - "HOST=db"
+      - "REDIS_HOST=redis"
+    depends_on:
+      - db
+      - redis
+    env_file:
+      - ./.env
+
+  celery_beat:
+    build: .
+    command: celery -A config beat -l INFO
+    volumes:
+      - .:/app
+    environment:
+      - "HOST=db"
+      - "REDIS_HOST=redis"
+    depends_on:
+      - db
+      - redis
+    env_file:
+      - ./.env
+
+volumes:
+  postgres_data:  # Том для БД
+  redis_data:     # Том для Redis
