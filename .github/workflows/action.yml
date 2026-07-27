@@ -61,9 +61,6 @@ jobs:
             
             echo "${{ secrets.ENV_FILE }}" > .env
             
-            cat << 'EOF' > Dockerfile
-            ${{ steps.read_dockerfile.outputs.content }}
-            EOF
 
       - name: Copy project files to remote server
         uses: appleboy/scp-action@v0.1.7
