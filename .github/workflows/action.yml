@@ -1,6 +1,5 @@
 name: Django CI/CD Pipeline
 
-# Запускается при каждом push или Pull Request
 on:
   push:
     branches: [ base_develop ]
@@ -8,11 +7,10 @@ on:
     branches: [ base_develop ]
 
 jobs:
-  # Тестирование и проверка PEP 8
-  tests_and_linting:
+  test:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Check out code
         uses: actions/checkout@v4
 
       - name: Set up Python
@@ -29,57 +27,46 @@ jobs:
       - name: Run Linter (PEP 8 check)
         run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
 
-      - name: Run Tests
-        env:  # тестовые переменные окружения
+      - name: Run tests
+        env:
           SECRET_KEY: 'django-insecure-test-key-for-github-actions-automation'
           DEBUG: 'True'
         run: python manage.py test
 
-  # Деплой после успешных тестов
   deploy:
     runs-on: ubuntu-latest
-    needs: tests_and_linting
+    needs: test
     if: github.ref == 'refs/heads/base_develop' && github.event_name == 'push'
     steps:
-      - name: Checkout code
+      - name: Check out code
         uses: actions/checkout@v4
 
-      # Разворачиваем проект на удаленном сервере с использованием Docker
-      - name: Deploy to Yandex Cloud via SSH
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Set up SSH Agent
+        uses: webfactory/ssh-agent@v0.9.0
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          script: |
-            mkdir -p ~/education_system
-            cd ~/education_system
-            
-            docker-compose down || true
-            
-            rm -rf *
-            
-            echo "${{ secrets.ENV_FILE }}" > .env
-            
+          ssh-private-key: ${{ secrets.SSH_KEY }}
 
-      - name: Copy project files to remote server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          source: "Dockerfile,docker-compose.yml,nginx.conf,requirements.txt,pyproject.toml"
-          target: "~/education_system"
+      - name: Prepare deploy directory
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+          mkdir -p ~/education_system
+          cd ~/education_system
+          docker-compose down || true
+          rm -rf *
+          EOF
 
-      - name: Execute docker-compose build and up on remote server
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          script: |
-            cd ~/education_system
-            
-            docker-compose up --build -d
-            
-            docker-compose exec -T web python manage.py migrate
+      - name: Copy project files to server
+        run: |
+          scp -o StrictHostKeyChecking=no Dockerfile docker-compose.yml nginx.conf requirements.txt pyproject.toml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/education_system/
+
+      - name: Create .env file on server
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "echo '${{ secrets.ENV_FILE }}' > ~/education_system/.env"
+
+      - name: Start Docker Application
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+          cd ~/education_system
+          docker-compose up --build -d
+          docker-compose exec -T web python manage.py migrate
+          EOF
