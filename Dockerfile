@@ -38,6 +38,7 @@ RUN mkdir -p /app/media
 # Пробрасываем порт, который будет использовать Django
 EXPOSE 8000
 
-# Команда для запуска приложения
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# Команда для запуска приложения через сервер Gunicorn
+CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000"]
+
 

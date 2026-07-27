@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -82,6 +83,12 @@ DATABASES = {
         'PORT': os.getenv('PORT'),
     }
 }
+# для тестирования CI/CD внутри GitHub Actions
+if 'test' in sys.argv:
+    DATABASES['default'] = {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': ':memory:',
+    }
 
 
 # Password validation
