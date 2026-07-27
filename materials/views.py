@@ -143,7 +143,7 @@ class LessonUpdateAPIView(generics.UpdateAPIView):
                 # Активируем Celery-задачу
                 send_course_update_email.delay(course.id)
 
-            course.touch()
+            course.save()
 
 @extend_schema(
     summary="Удалить урок",
