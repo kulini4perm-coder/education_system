@@ -3,9 +3,9 @@ name: Django CI/CD Pipeline
 # Запускается при каждом push или Pull Request
 on:
   push:
-    branches: [ main ]
+    branches: [ base_develop ]
   pull_request:
-    branches: [ main ]
+    branches: [ base_develop ]
 
 jobs:
   # Тестирование и проверка PEP 8
