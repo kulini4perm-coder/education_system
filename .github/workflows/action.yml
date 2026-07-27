@@ -33,11 +33,6 @@ jobs:
         env:  # тестовые переменные окружения
           SECRET_KEY: 'django-insecure-test-key-for-github-actions-automation'
           DEBUG: 'True'
-          NAME: 'test_db'
-          USER: 'postgres'
-          PASSWORD: 'password'
-          HOST: '127.0.0.1'
-          PORT: '5432'
         run: python manage.py test
 
   # Деплой после успешных тестов
