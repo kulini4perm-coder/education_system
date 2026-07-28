@@ -55,13 +55,13 @@ jobs:
           rm -rf *
           EOF
 
+      - name: Generate local .env file
+        run: |
+          echo "${{ secrets.ENV_FILE }}" > .env
+
       - name: Copy project files to server
         run: |
-          scp -o StrictHostKeyChecking=no Dockerfile docker-compose.yml nginx.conf requirements.txt pyproject.toml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/education_system/
-
-      - name: Create .env file on server
-        run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "echo '${{ secrets.ENV_FILE }}' > ~/education_system/.env"
+          scp -o StrictHostKeyChecking=no .env Dockerfile docker-compose.yml nginx.conf requirements.txt pyproject.toml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/education_system/
 
       - name: Start Docker Application
         run: |
