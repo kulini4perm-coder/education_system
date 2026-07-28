@@ -48,11 +48,15 @@ jobs:
 
       - name: Prepare deploy directory
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+          ssh -v -T -o StrictHostKeyChecking=no -o ConnectTimeout=15 ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
           mkdir -p ~/education_system
           cd ~/education_system
-          docker-compose down || true
-          rm -rf *
+          
+          if [ -f docker-compose.yml ]; then
+              docker-compose down --remove-orphans || true
+          fi
+          
+          find . -maxdepth 1 ! -name '.' ! -name '.env' -exec rm -rf {} +
           EOF
 
       - name: Generate local .env file
