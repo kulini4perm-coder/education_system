@@ -21,7 +21,7 @@ RUN apt-get update && apt-get install -y \
 RUN pip install --upgrade pip && pip install "poetry>=1.8.3"
 
 # Отключаем пакетный режим
-RUN poetry config package-mode false
+#RUN poetry config package-mode false
 
 # Копируем файл зависимостей в контейнер
 COPY pyproject.toml poetry.lock* ./
