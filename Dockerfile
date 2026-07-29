@@ -18,7 +18,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Устанавливаем менеджер пакетов Poetry
-RUN pip install "poetry==$POETRY_VERSION"
+RUN pip install --upgrade pip && pip install "poetry>=1.8.3"
 
 # Отключаем пакетный режим
 RUN poetry config package-mode false
