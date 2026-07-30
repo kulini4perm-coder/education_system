@@ -67,7 +67,7 @@ jobs:
       - name: Copy .env file to server
         run: |
           ssh -v -T -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p ~/education_system"
-          scp -o StrictHostKeyChecking=no .env ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/education_system/.env
+          scp -o StrictHostKeyChecking=no .env nginx.conf ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/education_system/
 
       - name: Deploy to server
         run: |
@@ -76,6 +76,7 @@ jobs:
           docker stop myapp education_system || true
           docker rm myapp education_system || true
           docker run -d --name education_system -p 80:8000 --network="host" --env-file ~/education_system/.env --restart always ${{ secrets.DOCKER_USERNAME }}/education_system:${{ github.sha }}
+          docker run -d --name education_nginx --network="host" -v ~/education_system/nginx.conf:/etc/nginx/nginx.conf:ro --restart always nginx:latest
           sleep 3
           docker exec -i education_system python manage.py migrate
           EOF
