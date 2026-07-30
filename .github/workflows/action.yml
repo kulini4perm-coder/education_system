@@ -75,12 +75,7 @@ jobs:
           docker pull ${{ secrets.DOCKER_USERNAME }}/education_system:${{ github.sha }}
           docker stop myapp education_system || true
           docker rm myapp education_system || true
-          docker run -d \
-            --name education_system \
-            -p 80:8000 \ 
-            --env-file ~/education_system/.env \
-            --restart always \
-            ${{ secrets.DOCKER_USERNAME }}/education_system:${{ github.sha }}
-          
-          docker exec -T education_system python manage.py migrate
+          docker run -d --name education_system -p 80:8000 --env-file ~/education_system/.env --restart always ${{ secrets.DOCKER_USERNAME }}/education_system:${{ github.sha }}
+          sleep 3
+          docker exec -i education_system python manage.py migrate
           EOF
