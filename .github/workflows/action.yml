@@ -60,11 +60,27 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_KEY }}
 
+      - name: Generate local .env file
+        run: |
+          echo "${{ secrets.ENV_FILE }}" > .env
+
+      - name: Copy .env file to server
+        run: |
+          ssh -v -T -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p ~/education_system"
+          scp -o StrictHostKeyChecking=no .env ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/education_system/.env
+
       - name: Deploy to server
         run: |
           ssh -v -T -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
           docker pull ${{ secrets.DOCKER_USERNAME }}/education_system:${{ github.sha }}
-          docker stop education_system || true
-          docker rm education_system || true
-          docker run -d --name myapp -p 80:8000 ${{ secrets.DOCKER_USERNAME }}/education_system:${{ github.sha }}
+          docker stop myapp education_system || true
+          docker rm myapp education_system || true
+          docker run -d \
+            --name education_system \
+            -p 80:8000 \ 
+            --env-file ~/education_system/.env \
+            --restart always \
+            ${{ secrets.DOCKER_USERNAME }}/education_system:${{ github.sha }}
+          
+          docker exec -T education_system python manage.py migrate
           EOF
