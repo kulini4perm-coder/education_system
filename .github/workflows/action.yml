@@ -73,8 +73,8 @@ jobs:
         run: |
           ssh -v -T -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
           docker pull ${{ secrets.DOCKER_USERNAME }}/education_system:${{ github.sha }}
-          docker stop myapp education_system || true
-          docker rm myapp education_system || true
+          docker stop education_system education_nginx || true
+          docker rm education_system education_nginx || true
           docker run -d --name education_system -p 80:8000 --network="host" --env-file ~/education_system/.env --restart always ${{ secrets.DOCKER_USERNAME }}/education_system:${{ github.sha }}
           docker run -d --name education_nginx --network="host" -v ~/education_system/nginx.conf:/etc/nginx/nginx.conf:ro --restart always nginx:latest
           sleep 3
