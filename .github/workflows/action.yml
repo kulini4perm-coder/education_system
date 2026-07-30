@@ -60,13 +60,14 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_KEY }}
 
-      - name: Generate local .env file
+      - name: Generate local configuration files
         run: |
           echo "${{ secrets.ENV_FILE }}" > .env
+          echo "${{ secrets.NGINX_CONF }}" > nginx.conf
 
-      - name: Copy .env file to server
+      - name: Copy configuration files to server
         run: |
-          ssh -v -T -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p ~/education_system"
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p ~/education_system"
           scp -o StrictHostKeyChecking=no .env nginx.conf ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/education_system/
 
       - name: Deploy to server
